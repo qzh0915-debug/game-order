@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>游戏接单平台</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: #121212; color: #fff; padding: 15px; }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* 选择身份页 */
+    #rolePage { text-align: center; padding: 50px 20px; }
+    #rolePage h2 { color: #00f2b7; margin-bottom: 30px; }
+    .roleBtn {
+      display: block; width: 200px; margin: 15px auto;
+      padding: 15px; border: none; border-radius: 10px;
+      background: #00f2b7; color: #000; font-weight: bold; font-size: 16px;
+    }
+
+    /* 登录/通用样式 */
+    .loginBox {
+      max-width: 400px; margin: 50px auto; padding: 25px;
+      background: #1e1e2e; border-radius: 12px;
+    }
+    .loginBox h2 { color: #00f2b7; text-align: center; margin-bottom: 20px; }
+    .loginBox input {
+      width: 100%; margin: 8px 0; padding: 12px;
+      border: none; border-radius: 8px; background: #2d2b42; color: #fff;
+    }
+    .loginBox button {
+      width: 100%; padding: 12px; border: none; border-radius: 8px;
+      background: #00f2b7; color: #000; font-weight: bold; margin-top: 10px;
+    }
+    .backBtn { background: #666 !important; margin-top: 8px !important; }
+
+    /* 管理员后台 */
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .header h2 { color: #00f2b7; }
+    .logoutBtn { background: #ff4444; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; }
+    .tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+    .tab {
+      padding: 8px 16px; border: none; border-radius: 8px;
+      background: #2d2b42; color: #fff; cursor: pointer;
+    }
+    .tab.active { background: #00f2b7; color: #000; }
+    .publishBox {
+      background: #1e1e2e; padding: 20px; border-radius: 12px; margin-bottom: 20px;
+    }
+    .publishBox input, .publishBox textarea {
+      width: 100%; margin: 6px 0; padding: 12px;
+      border: none; border-radius: 8px; background: #2d2b42; color: #fff;
+    }
+    .orderItem, .hitterItem {
+      background: #1e1e2e; padding: 15px; border-radius: 12px; margin: 10px 0;
+    }
+    .orderItem h3, .hitterItem h4 { color: #00f2b7; margin-bottom: 8px; }
+    .btnGroup { display: flex; gap: 8px; margin-top: 10px; }
+    .btnSettle { background: #00c48e; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; }
+    .btnDel, .btnFine { background: #ff4444; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; }
+    .btnAdd { background: #00c48e; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; }
+    .inputSmall { width: 80px; padding: 6px; border-radius: 6px; background: #2d2b42; color: #fff; border: none; }
+    .empty { text-align: center; color: #888; padding: 30px; }
+
+    /* 打手端 */
+    .balanceCard {
+      background: #1e1e2e; padding: 20px; border-radius: 12px;
+      text-align: center; margin-bottom: 15px;
+    }
+    .balanceCard h2 { color: #00f2b7; font-size: 32px; }
+    .nav {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: #1e1e2e; display: flex; justify-content: space-around; padding: 14px;
+    }
+    .nav button { background: none; border: none; color: #888; }
+    .nav button.active { color: #00f2b7; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<!-- 1. 选择身份 -->
+<div id="rolePage" class="page active">
+  <h2>🎮 游戏接单平台</h2>
+  <button class="roleBtn" onclick="showAdminLogin()">点击下方</button>
+  <button class="roleBtn" onclick="goHitter()">我是打手</button>
+</div>
+
+<!-- 2. 管理员登录 -->
+<div id="adminLoginPage" class="page">
+  <div class="loginBox">
+    <h2>🔐 管理员登录</h2>
+    <input type="text" id="adminUser" placeholder="管理员账号">
+    <input type="password" id="adminPwd" placeholder="管理员密码">
+    <button onclick="adminLogin()">登录后台</button>
+    <button class="backBtn" onclick="backToRole()">返回</button>
+  </div>
+</div>
+
+<!-- 3. 管理员后台 -->
+<div id="adminPage" class="page">
+  <div class="header">
+    <h2>管理员后台</h2>
+    <button class="logoutBtn" onclick="backToRole()">退出</button>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchAdminTab(0)">订单管理</button>
+    <button class="tab" onclick="switchAdminTab(1)">打手管理</button>
+  </div>
+
+  <!-- 订单管理 -->
+  <div id="adminOrderTab">
+    <div class="publishBox">
+      <h3 style="margin-bottom:10px;color:#00f2b7">📝 发布新订单</h3>
+      <input id="orderTitle" placeholder="订单标题（如：原神代肝）">
+      <textarea id="orderDesc" rows="3" placeholder="订单详细说明"></textarea>
+      <input id="orderMoney" type="number" placeholder="结算金额（元）" step="0.01">
+      <button onclick="publishOrder()" style="width:100%;background:#00f2b7;padding:12px;border:none;border-radius:8px;margin-top:10px">发布订单</button>
+    </div>
+    <h3 style="margin-bottom:10px;color:#00f2b7">📋 全部订单</h3>
+    <div id="adminOrderList"></div>
+  </div>
+
+  <!-- 打手管理 -->
+  <div id="adminHitterTab" style="display:none">
+    <h3 style="margin-bottom:10px;color:#00f2b7">👥 打手管理（余额/罚款）</h3>
+    <div id="adminHitterList"></div>
+  </div>
+</div>
+
+<!-- 4. 打手端 -->
+<div id="hitterPage" class="page" style="padding-bottom:70px">
+  <div class="header">
+    <h2>打手中心</h2>
+    <button class="logoutBtn" onclick="backToRole()">退出</button>
+  </div>
+  <div class="balanceCard">
+    <h3>💰 我的余额</h3>
+    <h2 id="hitterBalance">0.00 元</h2>
+  </div>
+  <div id="hitterPoolTab"></div>
+  <div id="hitterMyTab" style="display:none"></div>
+  <div class="nav">
+    <button class="active" onclick="switchHitterTab(0)">订单池</button>
+    <button onclick="switchHitterTab(1)">我的订单</button>
+  </div>
+</div>
+
+<script>
+// ========== 配置 ==========
+const ADMIN = { user: "12", pwd: "12" }
+let currentHitter = ""
+
+// ========== 数据存储（统一用一个 key，保证互通） ==========
+function getData() {
+  if (!localStorage.gameData) localStorage.gameData = '{"orders":[],"hitters":{}}'
+  return JSON.parse(localStorage.gameData)
+}
+function setData(data) { localStorage.gameData = JSON.stringify(data) }
+
+// ========== 页面切换 ==========
+function show(showId, ...hideIds) {
+  hideIds.forEach(id => document.getElementById(id).classList.remove("active"))
+  document.getElementById(showId).classList.add("active")
+}
+function showAdminLogin() { show("adminLoginPage", "rolePage") }
+function backToRole() { show("rolePage", "adminLoginPage", "adminPage", "hitterPage") }
+
+// ========== 管理员登录 ==========
+function adminLogin() {
+  const u = document.getElementById("adminUser").value
+  const p = document.getElementById("adminPwd").value
+  if (u === ADMIN.user && p === ADMIN.pwd) {
+    show("adminPage", "adminLoginPage")
+    renderAdminOrders()
+  } else alert("账号或密码错误")
+}
+
+// ========== 管理员 - 订单 ==========
+function publishOrder() {
+  const d = getData()
+  const t = document.getElementById("orderTitle").value
+  const desc = document.getElementById("orderDesc").value
+  const m = parseFloat(document.getElementById("orderMoney").value)
+  if (!t || !desc || isNaN(m) || m <= 0) { alert("请填写完整信息"); return }
+  d.orders.unshift({ id: Date.now(), title: t, desc: desc, money: m, status: "待接单", hitter: "", paid: false })
+  setData(d)
+  document.getElementById("orderTitle").value = ""
+  document.getElementById("orderDesc").value = ""
+  document.getElementById("orderMoney").value = ""
+  renderAdminOrders()
+}
+
+function renderAdminOrders() {
+  const d = getData()
+  let html = ""
+  d.orders.forEach(o => {
+    html += `
+    <div class="orderItem">
+      <h3>${o.title}</h3>
+      <p>${o.desc}</p>
+      <p>金额：${o.money} 元</p>
+      <p>状态：${o.status}</p>
+      <p>打手：${o.hitter || "无"}</p>
+      ${o.status === "已接单" ? `<button class="btnSettle" onclick="settleOrder(${o.id})">结单打款</button>` : ""}
+      <button class="btnDel" onclick="deleteOrder(${o.id})">删除订单</button>
+    </div>`
+  })
+  document.getElementById("adminOrderList").innerHTML = html || '<div class="empty">暂无订单</div>'
+}
+
+function settleOrder(id) {
+  const d = getData()
+  const o = d.orders.find(x => x.id === id)
+  if (o && o.status === "已接单") {
+    o.status = "已结算"
+    setData(d)
+    renderAdminOrders()
+    alert("✅ 结算成功！打手下次打开会自动到账")
+  }
+}
+
+function deleteOrder(id) {
+  if (!confirm("确定删除此订单？")) return
+  const d = getData()
+  d.orders = d.orders.filter(x => x.id !== id)
+  setData(d)
+  renderAdminOrders()
+}
+
+function switchAdminTab(i) {
+  document.getElementById("adminOrderTab").style.display = i === 0 ? "block" : "none"
+  document.getElementById("adminHitterTab").style.display = i === 1 ? "block" : "none"
+  document.querySelectorAll(".tab").forEach((t, j) => t.classList.toggle("active", j === i))
+  if (i === 1) renderAdminHitters()
+}
+
+// ========== 管理员 - 打手管理 ==========
+function renderAdminHitters() {
+  const d = getData()
+  let html = ""
+  const names = Object.keys(d.hitters)
+  if (names.length === 0) html = '<div class="empty">暂无打手</div>'
+  else {
+    names.forEach(n => {
+      const bal = d.hitters[n] || 0
+      html += `
+      <div class="hitterItem">
+        <h4>👤 打手编号：${n}</h4>
+        <p>💰 余额：${bal.toFixed(2)} 元</p>
+        <div class="btnGroup">
+          <input class="inputSmall" id="add_${n}" placeholder="加钱" type="number" step="0.01">
+          <button class="btnAdd" onclick="adjustHitter('${n}', 'add')">加钱</button>
+          <input class="inputSmall" id="fine_${n}" placeholder="罚款" type="number" step="0.01">
+          <button class="btnFine" onclick="adjustHitter('${n}', 'fine')">罚款</button>
+        </div>
+      </div>`
+    })
+  }
+  document.getElementById("adminHitterList").innerHTML = html
+}
+
+function adjustHitter(name, type) {
+  const d = getData()
+  let v = 0
+  if (type === "add") {
+    v = parseFloat(document.getElementById("add_" + name).value)
+    if (!v || v <= 0) { alert("请输入有效加钱金额"); return }
+    d.hitters[name] = (d.hitters[name] || 0) + v
+  } else {
+    v = parseFloat(document.getElementById("fine_" + name).value)
+    if (!v || v <= 0) { alert("请输入有效罚款金额"); return }
+    d.hitters[name] = Math.max(0, (d.hitters[name] || 0) - v)
+  }
+  setData(d)
+  renderAdminHitters()
+  alert(`✅ 已${type === "add" ? "加钱" : "罚款"} ${Math.abs(v).toFixed(2)} 元`)
+}
+
+// ========== 打手 ==========
+function goHitter() {
+  let num;
+  while (true) {
+    let input = prompt("请输入你的打手编号（只能输入 1～100 的数字）：");
+    if (input === null) return;
+    input = input.trim();
+    if (!/^\d+$/.test(input)) {
+      alert("只能输入数字！");
+      continue;
+    }
+    num = parseInt(input, 10);
+    if (num >= 1 && num <= 100) {
+      currentHitter = num.toString();
+      break;
+    } else {
+      alert("必须是 1 到 100 之间的数字！");
+    }
+  }
+
+  show("hitterPage", "rolePage")
+  syncHitterBalance()
+  renderHitterBalance()
+  renderHitterPool()
+  renderHitterMy()
+}
+
+function syncHitterBalance() {
+  const d = getData()
+  if (!d.hitters[currentHitter]) d.hitters[currentHitter] = 0
+  d.orders.forEach(o => {
+    if (o.hitter === currentHitter && o.status === "已结算" && !o.paid) {
+      o.paid = true
+      d.hitters[currentHitter] += o.money
+    }
+  })
+  setData(d)
+}
+
+function renderHitterBalance() {
+  const d = getData()
+  document.getElementById("hitterBalance").innerText = (d.hitters[currentHitter] || 0).toFixed(2) + " 元"
+}
+
+function renderHitterPool() {
+  const d = getData()
+  let html = ""
+  d.orders.forEach(o => {
+    if (o.status === "待接单") {
+      html += `
+      <div class="orderItem">
+        <h3>${o.title}</h3>
+        <p>${o.desc}</p>
+        <p>💰 结算金额：${o.money} 元</p>
+        <button class="btnSettle" style="width:100%" onclick="takeOrder(${o.id})">我要接单</button>
+      </div>`
+    }
+  })
+  document.getElementById("hitterPoolTab").innerHTML = html || '<div class="empty">暂无可接订单</div>'
+}
+
+function renderHitterMy() {
+  const d = getData()
+  let html = ""
+  d.orders.forEach(o => {
+    if (o.hitter === currentHitter) {
+      html += `
+      <div class="orderItem">
+        <h3>${o.title}</h3>
+        <p>${o.desc}</p>
+        <p>💰 金额：${o.money} 元</p>
+        <p>📌 状态：${o.status}</p>
+      </div>`
+    }
+  })
+  document.getElementById("hitterMyTab").innerHTML = html || '<div class="empty">暂无接单记录</div>'
+}
+
+function takeOrder(id) {
+  const d = getData()
+  const o = d.orders.find(x => x.id === id)
+  if (!o || o.status !== "待接单") { alert("此订单已被接走！"); return }
+  o.status = "已接单"
+  o.hitter = currentHitter
+  setData(d)
+  renderHitterPool()
+  renderHitterMy()
+  alert("✅ 接单成功！等待管理员结单后金额自动到账")
+}
+
+function switchHitterTab(i) {
+  document.getElementById("hitterPoolTab").style.display = i === 0 ? "block" : "none"
+  document.getElementById("hitterMyTab").style.display = i === 1 ? "block" : "none"
+  document.querySelectorAll(".nav button").forEach((t, j) => t.classList.toggle("active", j === i))
+}
+</script>
+</body>
+</html>
